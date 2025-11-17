@@ -4,9 +4,9 @@ from bleak import BleakScanner, BleakClient
 SERVICE_UUID = "c64ccea3-eae9-43bf-86cd-7d5d0b7372e4"
 TEMP_UUID = "4cdffd9d-8787-4dd3-88da-8a0309152a09"
 
-asynch def main():
+async def main():
     print("Scanning for BLE devices...")
-    devices = await BleakScanner.discover(timout =5.0)
+    devices = await BleakScanner.discover(timeout =5.0)
 
     esp_device = None
     for d in devices:
@@ -19,33 +19,46 @@ asynch def main():
         print("ESP32 BLE device not found")
         return
     
-    print("Connecting to ESP32 at {esp_device.adress}...")
+    print(f"Connecting to ESP32 at {esp_device.address}...")
 
-    asynch with BleakClient(esp_device.address) as client:
+    async with BleakClient(esp_device.address) as client:
         if not client.is_connected:
             print("Failed to connect")
-        return
+            return
     
         print("Connected!")
 
-        def notification_handler(handle, data: bytearray):
-            print(f"Notification from handle {handle}: {data.decode('utf-8',errors='ignore')}")
-        # Start notifications
-        await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
+        def notification_handler(sender: int, data: bytearray):
+            try:
+                txt = data.decode("utf-8", errors="ignore")
+            except Exception:
+                txt = str(data)
+            print(f"Notification from {sender}: {txt}")
 
-        # Read initial value
-        value = await client.read_gatt_char(CHARACTERISTIC_UUID)
-        print("Initial value from ESP32:", value.decode("utf-8", errors="ignore"))
+        # Start notifications on the characteristic
+        await client.start_notify(TEMP_UUID, notification_handler)
 
-        # Write something to ESP32
-        msg = "Hello from PC!"
-        print("Writing:", msg)
-        await client.write_gatt_char(CHARACTERISTIC_UUID, msg.encode("utf-8"))
+        # comment out for now, notify not working
 
-        print("Listening for 10 seconds...")
-        await asyncio.sleep(10)
+        # # Read initial value
+        # value = await client.read_gatt_char(TEMP_UUID)
+        # print("Initial value from ESP32:",
+        #       value.decode("utf-8", errors="ignore"))
 
-        await client.stop_notify(CHARACTERISTIC_UUID)
+        # # Write something to ESP32
+        # msg = "Hello from PC!"
+        # print("Writing:", msg)
+        # await client.write_gatt_char(TEMP_UUID, msg.encode("utf-8"))
+
+        # print("Listening for 10 seconds...")
+        # await asyncio.sleep(10)
+
+        await client.stop_notify(TEMP_UUID)
 
 if __name__ == "__main__":
+    # On Windows, if you get event loop errors, uncomment these two lines:
+    # import sys
+    # if sys.platform.startswith("win"):
+    #     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     asyncio.run(main())
