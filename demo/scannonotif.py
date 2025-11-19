@@ -28,8 +28,6 @@ async def main():
 
         print("Connected!")
 
-        # 🔹 NO NOTIFICATIONS YET – just read & write
-
         # Read initial value
         try:
             value = await client.read_gatt_char(TEMP_UUID)
