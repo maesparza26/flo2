@@ -4,6 +4,7 @@ from bleak import BleakScanner, BleakClient
 SERVICE_UUID = "c64ccea3-eae9-43bf-86cd-7d5d0b7372e4"
 TEMP_UUID = "4cdffd9d-8787-4dd3-88da-8a0309152a09"
 
+
 async def main():
     print("Scanning for BLE devices...")
     devices = await BleakScanner.discover(timeout=5.0)
