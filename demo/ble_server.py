@@ -2,6 +2,7 @@ import asyncio
 from bleak import BleakScanner, BleakClient
 from flask import Flask, jsonify
 import threading
+import struct
 
 SERVICE_UUID = "c64ccea3-eae9-43bf-86cd-7d5d0b7372e4"
 TEMP_UUID = "4cdffd9d-8787-4dd3-88da-8a0309152a09"
@@ -12,7 +13,7 @@ latest_temp = "NONE"
 #Bluetooth Low Energy
 
 async def ble_task():
-    global latest_temp
+    global temp_value
 
     print("Scanning for BLE devices...")
     device = None
@@ -29,20 +30,29 @@ async def ble_task():
     
     print("Connecting to", device.name, device.address)
     async with BleakClient(device) as client:
-        print("Connected:", await client.is_connected())
+        print("Connected:", client.is_connected)
 
-        def notification_handler(_, data: bytearray):
-            global latest_temp
-            # assuming ESP32 sends ASCII like "23.45"
-            latest = data.decode(errors="ignore").strip()
-            print("Temp:", latest)
-            latest_temp = latest
+        print("Starting loop to read data...")
+        try:
+            while True:
+                try:
+                    #reading temp characteristic
+                    data = await client.read_gatt_char(TEMP_UUID)
 
-        await client.start_notify(TEMP_UUID, notification_handler)
+                    #data is being sent in 4 bytes 
+                    if len(data) >= 4:
+                        temp = struct.unpack('<f',data[0:4])[0]
+                        temp_value = f"{temp: .2f}"
+                        print("Temperature Reading:",temp_value)
+                    else:
+                        print("Unexpected data length:", len(data),data)
+                except Exception as e:
+                    print("Error reading temperature characteristic:",e)
 
-        print("Listening for notifications. Ctrl+C to stop.")
-        while True:
-            await asyncio.sleep(1)
+                await asyncio.sleep(1)
+            
+        except asyncio.CancelledError:
+            print("Task cancelled")
 
 # ---------- FLASK HTTP SERVER ----------
 
@@ -50,7 +60,7 @@ app = Flask(__name__)
 
 @app.get("/temp")
 def get_temp():
-    return jsonify({"temp": latest_temp})
+    return jsonify({"temp": temp_value})
 
 def run_flask():
     # host="0.0.0.0" so emulator can reach it via 10.0.2.2
