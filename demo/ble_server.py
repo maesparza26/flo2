@@ -62,7 +62,7 @@ async def ble_task():
                         temp = struct.unpack('<f',data[0:4])[0]
 
                         temp_value = f"{temp: .2f}"
-                        print("Temperature Reading:",temp_value)
+                        print("Temperature Reading:",temp_value,"Celsius")
 
                         #add each point to the history, and keep the 100 most recent readings
                         temp_history.append({
