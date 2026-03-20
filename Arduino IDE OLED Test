@@ -1,0 +1,39 @@
+#include <U8g2lib.h>   // Library for controlling the OLED display (SSD1327)
+#include <SPI.h>       // Library for SPI communication
+
+#define CS   5         // Chip Select pin (tells display when to listen)
+#define DC   4         // Data/Command pin (switches between data and commands)
+#define RST  17        // Reset pin (resets the display)
+
+#define SCK  23        // SPI Clock pin (controls timing of data transfer)
+#define MOSI 22        // SPI Data pin (Master Out Slave In → sends data to display)
+
+// Create display object using SSD1327 driver (128x128 mode, hardware SPI)
+U8G2_SSD1327_MIDAS_128X128_F_4W_HW_SPI u8g2(U8G2_R0, CS, DC, RST);
+
+void setup() {
+  // Initialize SPI with your specific pins:
+  // SCK = clock, -1 = no MISO (not needed), MOSI = data, CS = chip select
+  SPI.begin(SCK, -1, MOSI, CS);  
+
+  // Initialize the display (turn it on and get it ready)
+  u8g2.begin();
+}
+
+void loop() {
+  // Clear the internal memory buffer (start fresh each frame)
+  u8g2.clearBuffer();
+
+  // Set the font for the text
+  u8g2.setFont(u8g2_font_ncenB08_tr);
+
+  // Display Name  at position (x=15, y=20)
+  u8g2.drawStr(0, 20, "P.U.L.S.E. Readings");
+  // Display Temperature at position (x=0, y=50)
+  u8g2.drawStr(0, 50, "Temperature: 42.56 F");
+    // Draw the text "Hello World" at position (x=0, y=80) *Do not go below y=90 or it won't appear on OLED*
+  u8g2.drawStr(0, 80, "Pressure: 0.7777 cmH2O"); //The most digits that fit on display is 1 decimal point and 5 numbers
+
+  // Send everything in the buffer to the display (actually shows it)
+  u8g2.sendBuffer();
+}
